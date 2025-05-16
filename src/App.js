@@ -11,17 +11,16 @@ function App() {
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt');
 
-  // Fetch tasks from backend
-  const fetchTasks = async () => {
-    try {
-      const res = await axios.get('http://localhost:5000/tasks');
-      setTasks(res.data);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-    }
-  };
-
   useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/tasks`);
+        setTasks(res.data);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      }
+    };
+
     fetchTasks();
   }, []);
 
@@ -29,13 +28,15 @@ function App() {
   const addTask = async () => {
     if (!newTitle.trim()) return;
     try {
-      await axios.post('http://localhost:5000/tasks', {
+      await axios.post(`${process.env.REACT_APP_API_URL}/tasks`, {
         title: newTitle,
         deadline: newDeadline || null,
       });
       setNewTitle('');
       setNewDeadline('');
-      fetchTasks();
+      // Refetch tasks after adding
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/tasks`);
+      setTasks(res.data);
     } catch (error) {
       console.error('Error adding task:', error);
     }
@@ -44,10 +45,11 @@ function App() {
   // Toggle task completion
   const toggleComplete = async (task) => {
     try {
-      await axios.put(`http://localhost:5000/tasks/${task._id}`, {
+      await axios.put(`${process.env.REACT_APP_API_URL}/tasks/${task._id}`, {
         completed: !task.completed,
       });
-      fetchTasks();
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/tasks`);
+      setTasks(res.data);
     } catch (error) {
       console.error('Error updating task:', error);
     }
@@ -56,8 +58,9 @@ function App() {
   // Delete task
   const deleteTask = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/tasks/${id}`);
-      fetchTasks();
+      await axios.delete(`${process.env.REACT_APP_API_URL}/tasks/${id}`);
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/tasks`);
+      setTasks(res.data);
     } catch (error) {
       console.error('Error deleting task:', error);
     }
@@ -73,12 +76,13 @@ function App() {
   // Save edited task
   const saveEdit = async (taskId) => {
     try {
-      await axios.put(`http://localhost:5000/tasks/${taskId}`, {
+      await axios.put(`${process.env.REACT_APP_API_URL}/tasks/${taskId}`, {
         title: editingTitle,
         deadline: editingDeadline || null,
       });
       setEditingTaskId(null);
-      fetchTasks();
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/tasks`);
+      setTasks(res.data);
     } catch (error) {
       console.error('Error saving task edits:', error);
     }
@@ -92,8 +96,9 @@ function App() {
   // Clear all completed tasks
   const clearCompletedTasks = async () => {
     try {
-      await axios.delete('http://localhost:5000/tasks/clear/completed');
-      fetchTasks();
+      await axios.delete(`${process.env.REACT_APP_API_URL}/tasks/clear/completed`);
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/tasks`);
+      setTasks(res.data);
     } catch (error) {
       console.error('Error clearing completed tasks:', error);
     }
@@ -149,7 +154,7 @@ function App() {
         maxWidth: 700,
         margin: 'auto',
         padding: 20,
-        backgroundImage:`url("/bhole.jpg")`,
+        backgroundImage: `url("/bhole.jpg")`,
         backgroundSize: 'cover',
         minHeight: '100vh',
         color: '#222',
@@ -347,24 +352,8 @@ function App() {
                     fontStyle: task.deadline ? 'normal' : 'italic',
                   }}
                 >
-                  {task.deadline
-                    ? new Date(task.deadline).toLocaleDateString()
-                    : 'No deadline'}
+                  {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'No deadline'}
                 </div>
-                <button
-                  onClick={() => startEditing(task)}
-                  style={{
-                    padding: '6px 10px',
-                    backgroundColor: '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                  }}
-                  title="Edit task"
-                >
-                  Edit
-                </button>
                 <button
                   onClick={() => deleteTask(task._id)}
                   style={{
@@ -375,7 +364,6 @@ function App() {
                     borderRadius: 4,
                     cursor: 'pointer',
                   }}
-                  title="Delete task"
                 >
                   Delete
                 </button>
